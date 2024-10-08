@@ -136,12 +136,12 @@ class FPH():
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (2/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (2/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])        
         
            
-                     
+        self.vert_var = np.linspace(0, 13000-self.q_max, disc[2])           
         if vqmax == True:
             self.vazao_usina = np.linspace(self.q_max, self.q_max, 1) 
             self.vol_var = np.linspace(uhe['vol_max'], uhe['vol_max'], 1)
-            self.vert_var = np.linspace(0, self.q_max*2, disc[2])
-           
+           # self.vert_var = np.linspace(0, self.q_max*2, disc[2]) 
+                       
         for vaz in self.vazao_usina:            
             for vol in self.vol_var:
                 for vert in self.vert_var:
@@ -228,9 +228,10 @@ class FPH_Linear():
             
         self.fph = FPH.fph_out(disc, Estratégia, rdp=False, NUG = self.NUG)
         fph = self.fph
-        self.fph_s = FPH.fph_out_s(disc, Estratégia, rdp=False, vqmax =True)
+        self.fph_s = FPH.fph_out_s(disc, Estratégia, rdp=False, vqmax = True)
         fph_s = self.fph_s
         M = len(fph_s)
+
         N = len(fph)
         Pontos =[]
         #coef_ajust = 1
@@ -378,8 +379,8 @@ class FPH_Linear():
         return fph, fphl, acc     
     
     def fph_out_linear_s(self, Estratégia):
-        fph = np.array(FPH.fph_out_s([100,100, 100], Estratégia, rdp=False,vqmax =False,  NUG = self.NUG )) 
-        fphl = np.array(FPH.fph_out_s([100, 100, 100], Estratégia, rdp=False, vqmax =False,  NUG = self.NUG ))
+        fph = np.array(FPH.fph_out_s([100,100, 10], Estratégia, rdp=False,vqmax =False,  NUG = self.NUG )) 
+        fphl = np.array(FPH.fph_out_s([100, 100, 10], Estratégia, rdp=False, vqmax =False,  NUG = self.NUG ))
         coef = self.coef_s
         if len(coef)>=0:
             for i in range(len(fphl)):
@@ -496,7 +497,7 @@ FPH_Linear = FPH_Linear()
 
 coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
 len(coef_s)
-aaaaa
+
 #aaaa
 #coef, coef_s, acc,  fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
 #len(coef)
