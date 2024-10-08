@@ -40,7 +40,8 @@ class FPH():
         self.PCA = uhe['pol_cota_area'] #Cota Áreas
         self.PCV = uhe['pol_cota_vol'] #Cota volume
         #self.PCV = [331.649, 0.00752020, 0.0, 0.0, 0.0] #ITA
-        self.PCV = [885.6586303710938, 1e-40, 0.0, 0.0, 0.0]
+        #self.PCV = [885.6586303710938, 1e-40, 0.0, 0.0, 0.0] #camargos]
+        self.PCV = [807.9130859375, 1e-40, 0.0, 0.0, 0.0] #FUNIL-GRANDE
         self.PVNJ = uhe['pol_vaz_niv_jus'] #Cota volumeuhe['pol_vaz_niv_jus']
         #self.PVNJ = [261.363,	0.00301186,	-5.636080E-7,	6.791440E-11,	-3.028480E-15] #Cota volumeuhe['pol_vaz_niv_jus']
     
@@ -80,7 +81,7 @@ class FPH():
         self.vazao_usina = np.linspace(0, self.q_max, disc[0])
         if Reg == 'M':
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (1/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (1/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1]) 
-        if Reg=='SR':
+        if Reg =='SR':
             #self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (1/100)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (1/100)*(uhe['vol_max']-uhe['vol_min'])), disc[1]) 
             self.vol_var = np.linspace(Vini - (1/100)*(uhe['vol_min']),  Vini + (1/100)*(uhe['vol_max']), disc[1]) 
         else:
@@ -442,11 +443,12 @@ class FPH_SEL():
 #--------------------------------------------------Carregada Dados----------------------------------------------------------------------------------------------------------------#
 'Carregando Dados:'
 Caso = Newave('NEWAVE') #Lê os dados do Newave
-#uhe = Caso.confhd.get('ITA')   
+   
 #uhe = Caso.hidr.get('ITA')        
 #uhe = Caso.confhd.get('CAMARGOS')         
-uhe = Caso.hidr.get('ITUTINGA') 
-#aaaaaa
+#uhe = Caso.hidr.get('ITUTINGA') 
+uhe = Caso.hidr.get('FUNIL-GRANDE') 
+aaaaaa
 #Volume
 
 Vini = uhe['vol_min'] + (1/2)*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
@@ -496,38 +498,38 @@ FPH.Plota_FPH(fph_n_linear)
 FPH.Plota_FPH(fph_linear)
 
 #%%
-###DIsc x Erro
-disc_q = [3, 4, 5, 6, 8, 10, 20]
-disc_v = [2, 4, 5, 6, 8, 10, 20]
-#disc_v = [2]
-ar=np.zeros([len(disc_v), len(disc_q)])
-ac=np.zeros([len(disc_q), len(disc_q)])
-ac_s=np.zeros([len(disc_v), len(disc_q)])
+# ###DIsc x Erro
+# disc_q = [3, 4, 5, 6, 8, 10, 20]
+# disc_v = [2, 4, 5, 6, 8, 10, 20]
+# #disc_v = [2]
+# ar=np.zeros([len(disc_v), len(disc_q)])
+# ac=np.zeros([len(disc_q), len(disc_q)])
+# ac_s=np.zeros([len(disc_v), len(disc_q)])
 
-for i in range(len(disc_q)):
-    for j in range (len(disc_v)):
-        coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([disc_q[i],disc_v[j],2], Estratégia, rdp=False)
-        ar[j, i]=acc
-        ac_s[j, i]=acc_s
-        ac[j, i]=len(coef)
+# for i in range(len(disc_q)):
+#     for j in range (len(disc_v)):
+#         coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([disc_q[i],disc_v[j],2], Estratégia, rdp=False)
+#         ar[j, i]=acc
+#         ac_s[j, i]=acc_s
+#         ac[j, i]=len(coef)
 
-# Convert the arrays to DataFrames
-df1 = pd.DataFrame(ar)
-df2 = pd.DataFrame(ac)
-df3 = pd.DataFrame(ac_s)
-# Create a Pandas Excel writer object
-with pd.ExcelWriter('output.xlsx') as writer:
-    df1.to_excel(writer, sheet_name='Array1', index=False)
-    df2.to_excel(writer, sheet_name='Array2', index=False)
-    df3.to_excel(writer, sheet_name='Array3', index=False)
-print("Arrays have been written to output.xlsx")
+# # Convert the arrays to DataFrames
+# df1 = pd.DataFrame(ar)
+# df2 = pd.DataFrame(ac)
+# df3 = pd.DataFrame(ac_s)
+# # Create a Pandas Excel writer object
+# with pd.ExcelWriter('output.xlsx') as writer:
+#     df1.to_excel(writer, sheet_name='Array1', index=False)
+#     df2.to_excel(writer, sheet_name='Array2', index=False)
+#     df3.to_excel(writer, sheet_name='Array3', index=False)
+# print("Arrays have been written to output.xlsx")
 
 
 ############################################Escrever Resultados da Linearização##########################################################################################################    
 
 #Q,V,S###############################################################################################################
 
-# Corte =  np.linspace(0, len(coef_s), len(coef_s)+1)
+Corte =  np.linspace(0, len(coef_s), len(coef_s)+1)
 
 # Q1 = np.array(fph[:,0])
 # V1=  np.array(fph[:,1])
@@ -542,61 +544,62 @@ print("Arrays have been written to output.xlsx")
 # with pd.ExcelWriter('FPH-LinearxNLinear.xlsx') as writer:
 #       df2.to_excel(writer, sheet_name='FPHxFPHL'+uhe['nome'])
 
-# Corte = np.linspace(0, len(coef_s), len(coef_s) + 1)
-# Q = np.array(coef_s[:, 0])
-# V = np.array(coef_s[:, 1])
-# S = np.array(coef_s[:, 2])
-# I = np.array(coef_s[:, 3])
+Corte = np.linspace(0, len(coef_s), len(coef_s) + 1)
+Q = np.array(coef_s[:, 0])
+V = np.array(coef_s[:, 1])
+S = np.array(coef_s[:, 2])
+I = np.array(coef_s[:, 3])
 
 
-# TSF = np.empty(len(coef_s))*np.nan
-# TSF1 = np.empty(len(coef_s))*np.nan
-# TSF2 = np.empty(len(coef_s))*np.nan
-# TSF[0] = acc
-# TSF1[0] = max(fph_n_linear[:,2])
-# Perda=((uhe['perda_hid']*2.6)/(uhe['vaz_efet_conj'][0]**2))
-# print(TSF1[0])
-# print(Perda)
-
-# # Use square brackets to create a list with a single value for 'R²'
-# columns_3 = ['Corte', 'Coef_Q', 'Coef_V', 'Coef_S', 'Coef_Independente', 'MAPE']
-# df3 = pd.DataFrame(list(zip(Corte, Q, V, S, I, TSF)), columns=columns_3)
-# print(df3)
-
-#Q,V###############################################################################################################
-
-Corte =  np.linspace(0, len(coef), len(coef)+1)
-
-Q1 = np.array(fph[:,0])
-V1=  np.array(fph[:,1])
-P1 = np.array(fph[:,2])
-P2 = np.array(fph1[:,2])
-
-columns_2=['Q','V','PG','PGLinear']
-df2 = pd.DataFrame(list(zip(Q1, V1, P1, P2)), columns=columns_2)
-
-   
-with pd.ExcelWriter('FPH-LinearxNLinear.xlsx') as writer:
-      df2.to_excel(writer, sheet_name='FPHxFPHL'+uhe['nome'])
-
-Corte = np.linspace(0, len(coef), len(coef) + 1)
-Q = np.array(coef[:, 0])
-V = np.array(coef[:, 1])
-I = np.array(coef[:, 2])
-
-
-TSF = np.empty(len(coef))*np.nan
-TSF1 = np.empty(len(coef))*np.nan
-TSF2 = np.empty(len(coef))*np.nan
+TSF = np.empty(len(coef_s))*np.nan
+TSF1 = np.empty(len(coef_s))*np.nan
+TSF2 = np.empty(len(coef_s))*np.nan
 TSF[0] = acc
 TSF1[0] = max(fph_n_linear[:,2])
+Perda=((uhe['perda_hid']*2.6)/(uhe['vaz_efet_conj'][0]**2))
+print(TSF1[0])
+print(Perda)
 
-columns_3 = ['Corte', 'Coef_Q', 'Coef_V', 'Coef_Independente', 'MAPE']
-df3 = pd.DataFrame(list(zip(Corte, Q, V, I, TSF)), columns=columns_3)
-print(df3)
 # Use square brackets to create a list with a single value for 'R²'
+columns_3 = ['Corte', 'Coef_Q', 'Coef_V', 'Coef_S', 'Coef_Independente', 'MAPE']
+df3 = pd.DataFrame(list(zip(Corte, Q, V, S, I, TSF)), columns=columns_3)
+print(df3)
 with pd.ExcelWriter('FPH-Coef-'+uhe['nome']+'-.xlsx') as writer:
     df3.to_excel(writer, sheet_name='Coef_FPH')
+#Q,V###############################################################################################################
+
+# Corte =  np.linspace(0, len(coef), len(coef)+1)
+
+# Q1 = np.array(fph[:,0])
+# V1=  np.array(fph[:,1])
+# P1 = np.array(fph[:,2])
+# P2 = np.array(fph1[:,2])
+
+# columns_2=['Q','V','PG','PGLinear']
+# df2 = pd.DataFrame(list(zip(Q1, V1, P1, P2)), columns=columns_2)
+
+   
+# with pd.ExcelWriter('FPH-LinearxNLinear.xlsx') as writer:
+#       df2.to_excel(writer, sheet_name='FPHxFPHL'+uhe['nome'])
+
+# Corte = np.linspace(0, len(coef), len(coef) + 1)
+# Q = np.array(coef[:, 0])
+# V = np.array(coef[:, 1])
+# I = np.array(coef[:, 2])
+
+
+# TSF = np.empty(len(coef))*np.nan
+# TSF1 = np.empty(len(coef))*np.nan
+# TSF2 = np.empty(len(coef))*np.nan
+# TSF[0] = acc
+# TSF1[0] = max(fph_n_linear[:,2])
+
+# columns_3 = ['Corte', 'Coef_Q', 'Coef_V', 'Coef_Independente', 'MAPE']
+# df3 = pd.DataFrame(list(zip(Corte, Q, V, I, TSF)), columns=columns_3)
+# print(df3)
+# # Use square brackets to create a list with a single value for 'R²'
+# with pd.ExcelWriter('FPH-Coef-'+uhe['nome']+'-.xlsx') as writer:
+#     df3.to_excel(writer, sheet_name='Coef_FPH')
     
 #Q,HB###############################################################################################################
 #HB
