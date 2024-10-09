@@ -44,6 +44,7 @@ class FPH():
         #self.PCV = [807.9130859375, 1e-40, 0.0, 0.0, 0.0] #FUNIL-GRANDE
         self.PVNJ = uhe['pol_vaz_niv_jus'] #Cota volumeuhe['pol_vaz_niv_jus']
         #self.PVNJ = [261.363,	0.00301186,	-5.636080E-7,	6.791440E-11,	-3.028480E-15] #Cota volumeuhe['pol_vaz_niv_jus']
+        
     
     def FCM(self, Volume):
         cota_montante = 0
@@ -122,15 +123,12 @@ class FPH():
             NUG=1
         
          #FPH com vertimento                
-        # self.vazao_usina = np.linspace(0, uhe['vaz_efet_conj'][0]*1.038*NUG, disc[0])
-        # self.vol_var = np.linspace(Vini*(1-0.004), Vini*(1+0.004), disc[1]) #
-        # self.vert_var = np.linspace(0, uhe['vaz_efet_conj'][0]*1.038*NUG, disc[2])
+
         self.vazao_usina = np.linspace(0, self.q_max, disc[0])
         self.vol_var = np.linspace(uhe['vol_min'], uhe['vol_max'], disc[1]) #
         if Reg == 'M':
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (1/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (1/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])             
-        if Reg=='SR':
-            #self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (1/100)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (1/100)*(uhe['vol_max']-uhe['vol_min'])), disc[1]) 
+        if Reg=='SR':           
             self.vol_var = np.linspace(Vini - (1/100)*(uhe['vol_min']),  Vini + (1/100)*(uhe['vol_max']), disc[1])         
         if Reg=='S':
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (2/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (2/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])        
@@ -140,6 +138,7 @@ class FPH():
         if vqmax == True:
             self.vazao_usina = np.linspace(self.q_max, self.q_max, 1) 
             self.vol_var = np.linspace(uhe['vol_max'], uhe['vol_max'], 1)
+            
            # self.vert_var = np.linspace(0, self.q_max*2, disc[2]) 
                        
         for vaz in self.vazao_usina:            
@@ -359,6 +358,7 @@ class FPH_Linear():
     def fph_out_linear(self, Estratégia):
         fph = np.array(FPH.fph_out([100,100], Estratégia, rdp=False, NUG = self.NUG )) 
         fphl = np.array(FPH.fph_out([100,100], Estratégia, rdp=False, NUG = self.NUG ))
+        #fphl = fph
         coef = self.coef
         if len(coef)>=0:
             for i in range(len(fphl)):
@@ -380,7 +380,8 @@ class FPH_Linear():
     
     def fph_out_linear_s(self, Estratégia):
         fph = np.array(FPH.fph_out_s([100,100, 10], Estratégia, rdp=False,vqmax =False,  NUG = self.NUG )) 
-        fphl = np.array(FPH.fph_out_s([100, 100, 10], Estratégia, rdp=False, vqmax =False,  NUG = self.NUG ))
+        fphl = np.array(FPH.fph_out_s([100, 100, 10], Estratégia, rdp=False, vqmax =False,  NUG = self.NUG ))  
+        #fphl = fph
         coef = self.coef_s
         if len(coef)>=0:
             for i in range(len(fphl)):
@@ -389,7 +390,7 @@ class FPH_Linear():
                 s = fphl[i,2]
                 plano_2 = []
                 for k in range(len(coef)):
-                    if q > self.q_max and v > uhe['vol_max']:                        
+                    if q >= self.q_max and v >= uhe['vol_max']:                        
                         plano_2.append(np.matmul(coef[k,:],[q, v,  s, 1]))
                     else:
                         plano_2.append(np.matmul(coef[k,:],[q, v,  0, 1]))
@@ -496,6 +497,7 @@ FPH_Linear = FPH_Linear()
 #coef  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False, NUG = 1)
 
 coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
+
 len(coef_s)
 
 #aaaa
@@ -511,7 +513,7 @@ FPH.Plota_FPH(fph_n_linear)
 FPH.Plota_FPH(fph_linear)
 
 #%%
-###DIsc x Erro
+##DIsc x Erro
 # disc_q = [2, 4, 5, 6, 8, 10, 20]
 # disc_v = [2, 4, 5, 6, 8, 10, 20]
 # #disc_v = [2]
@@ -569,9 +571,9 @@ TSF1 = np.empty(len(coef_s))*np.nan
 TSF2 = np.empty(len(coef_s))*np.nan
 TSF[0] = acc
 TSF1[0] = max(fph_n_linear[:,2])
-Perda=((uhe['perda_hid']*2.6)/(uhe['vaz_efet_conj'][0]**2))
+#Perda=((uhe['perda_hid']*2.6)/(uhe['vaz_efet_conj'][0]**2))
 print(TSF1[0])
-print(Perda)
+#print(Perda)
 
 # Use square brackets to create a list with a single value for 'R²'
 columns_3 = ['Corte', 'Coef_Q', 'Coef_V', 'Coef_S', 'Coef_Independente', 'MAPE']
