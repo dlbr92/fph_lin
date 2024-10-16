@@ -85,8 +85,8 @@ class FPH():
             
         #Discretização
         self.vazao_usina = np.linspace(0, self.q_max, disc[0])
-        #self.vol_var = np.linspace(uhe['vol_min'], uhe['vol_max'], disc[1]) #
-        self.vol_var = np.linspace(Vini*(1-0.00001),Vini*(1+0.00001))
+        self.vol_var = np.linspace(uhe['vol_min'], uhe['vol_max'], disc[1]) #
+        #self.vol_var = np.linspace(Vini*(1-0.00001),Vini*(1+0.00001))
         if Reg == 'M':
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (1/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (1/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])             
         if Reg=='SR':
@@ -131,8 +131,9 @@ class FPH():
          #FPH com vertimento                
 
         self.vazao_usina = np.linspace(0, self.q_max, disc[0])
-        #self.vol_var = np.linspace(uhe['vol_min'], uhe['vol_max'], disc[1]) #
-        self.vol_var = np.linspace(Vini*(1-0.00001),Vini*(1+0.00001))
+        self.vol_var = np.linspace(uhe['vol_min'], uhe['vol_max'], disc[1]) #
+        #self.vol_var = np.linspace(Vini*(1-1e-10),Vini*(1+1e-10))
+        #self.vol_var = np.linspace(Vini*(1-0.00001),Vini*(1+0.00001))
         if Reg == 'M':
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (1/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (1/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])             
         if Reg=='SR':           
@@ -343,8 +344,8 @@ class FPH_Linear():
             coeficientes.append([co[0], co[1], CB, co[2]])    #Desativar caso ative o código acima
                       
         self.coef_s = np.array(coeficientes)
-        fph, fphl, acc_s  = self.fph_out_linear_s(Estratégia, disc) #somente para q, v, s
-        fph, fphl, acc  = self.fph_out_linear(Estratégia, disc) #somente para q, v, s
+        fph, fphl, acc_s  = self.fph_out_linear_s(Estratégia) #somente para q, v, s
+        fph, fphl, acc  = self.fph_out_linear(Estratégia) #somente para q, v, s
         
         
         return self.coef, self.coef_s, acc, acc_s, fph, fphl, fph_s, ajuste
@@ -362,7 +363,7 @@ class FPH_Linear():
                 fph_l=min(plano_l)
         return fph_l
        
-    def fph_out_linear(self, Estratégia, disc):
+    def fph_out_linear(self, Estratégia):
         fph = np.array(FPH.fph_out([100,100], Estratégia, rdp=False, NUG = self.NUG )) 
         fphl = np.array(FPH.fph_out([100,100], Estratégia, rdp=False, NUG = self.NUG ))
         #fph = np.array(FPH.fph_out(disc, Estratégia, rdp=False, NUG = self.NUG )) 
@@ -379,7 +380,8 @@ class FPH_Linear():
                     fphl[i,2]=min(plano_2)
         #acc = r2_score(fph[:,-1], fphl[:,-1])
         #acc = mean_absolute_error(fph[:,-1], fphl[:,-1])
-        acc = mape(fph[:,-1], fphl[:,-1])
+        #acc = mape(fph[:,-1], fphl[:,-1])
+        acc = self.mapes(fph[:,-1], fphl[:,-1])
         #acc = mean_absolute_error(fph[:,-1], fphl[:,-1])
         amostra = len(fphl)
         #print(f"Usina {uhe['nome'].strip()}: A Precisão da Linearização é de {acc*100}%")  
@@ -387,8 +389,14 @@ class FPH_Linear():
         #print(f"Usina {uhe['nome'].strip()}: A Precisão da Linearização é de {acc}")                      
         return fph, fphl, acc     
     
-    def fph_out_linear_s(self, Estratégia, disc):
-        fph = np.array(FPH.fph_out_s([100,100, 10], Estratégia, rdp=False,vqmax =False,  NUG = self.NUG )) 
+    def mapes(self, y_true, y_pred):
+        y_true, y_pred = np.array(y_true), np.array(y_pred)    
+    # Ignorar divisões por zero
+        mask = y_true != 0
+        return np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100
+
+    def fph_out_linear_s(self, Estratégia):
+        fph = np.array(FPH.fph_out_s([100, 100, 10], Estratégia, rdp=False,vqmax =False,  NUG = self.NUG )) 
         fphl = np.array(FPH.fph_out_s([100, 100, 10], Estratégia, rdp=False, vqmax =False,  NUG = self.NUG )) 
         #fph = np.array(FPH.fph_out_s(disc, Estratégia, rdp=False,vqmax =False,  NUG = self.NUG )) 
         #fphl = np.array(FPH.fph_out_s(disc, Estratégia, rdp=False, vqmax =False,  NUG = self.NUG ))
@@ -408,7 +416,8 @@ class FPH_Linear():
                     fphl[i,3]=min(plano_2)
         #acc = r2_score(fph[:,-1], fphl[:,-1])
         #acc = mean_absolute_error(fph[:,-1], fphl[:,-1])
-        acc = mape(fph[:,-1], fphl[:,-1])
+        acc = self.mapes(fph[:,-1], fphl[:,-1])
+        #acc = mape(fph[:,-1], fphl[:,-1])
         #acc = mse(fph[:,-1], fphl[:,-1])
         amostra = len(fphl)
         print(f"Usina {uhe['nome'].strip()}: A Erro Médio Absoluto (com vertimento) é de {acc}") 
@@ -488,7 +497,7 @@ FPH = FPH()
 Estratégia = 'Agregada'
 Reg = 0
 #Reg = 'SR'
-#Reg  = uhe['tipo_reg']
+Reg  = uhe['tipo_reg']
 FPHA_Adj = True
 #grp = 2
 
@@ -497,9 +506,9 @@ FPHA_Adj = True
 fph = FPH.fph_out([5,5], Estratégia = 'Agregada', rdp=False)
 #fph = FPH.fph_out([10,10], Estratégia = 'Agregada', rdp=False, NUG = 2)
 #FPH.Plota_Rendimento()
-# FPH.Plota_FPH(fph)
-# FPH.Plota_FCM()
-# FPH.Plota_FCJ()
+FPH.Plota_FPH(fph)
+FPH.Plota_FCM()
+FPH.Plota_FCJ()
 #aaa
 #%%
 #--------------------------------------------------Inicializa Parâmetros de Linearização----------------------------------------------------------------------------------------------------------------# 
@@ -507,11 +516,11 @@ FPH_Linear = FPH_Linear()
 #coef  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
 #coef  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False, NUG = 1)
 
-coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
+coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=True)
 
 len(coef_s)
-#aaaa
-#aaaa
+
+
 #coef, coef_s, acc,  fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
 #len(coef)
 #coef = FPH_Linear.PWL_MQ([5,5], Estratégia, 4, rdp=False, NUG = 1)
@@ -519,36 +528,36 @@ len(coef_s)
 
 
 
-# fph_n_linear, fph_linear, acc = FPH_Linear.fph_out_linear(Estratégia)
-# FPH.Plota_FPH(fph_n_linear)
-# FPH.Plota_FPH(fph_linear)
+fph_n_linear, fph_linear, acc = FPH_Linear.fph_out_linear(Estratégia)
+FPH.Plota_FPH(fph_n_linear)
+FPH.Plota_FPH(fph_linear)
 
 #%%
-##DIsc x Erro
-disc_q = [2, 4, 5, 6, 8, 10, 20, 30, 40, 50]
+#DIsc x Erro
+# disc_q = [2, 4, 5, 6, 8, 10, 20, 30, 40, 50]
 #disc_q = [2, 4, 5, 6, 8, 10, 20]
 #disc_v = [2, 4, 5, 6, 8, 10, 20]
-disc_v = [2]
-ar=np.zeros([len(disc_v), len(disc_q)])
-ac=np.zeros([len(disc_q), len(disc_q)])
-ac_s=np.zeros([len(disc_v), len(disc_q)])
+# disc_v = [2]
+# ar=np.zeros([len(disc_v), len(disc_q)])
+# ac=np.zeros([len(disc_q), len(disc_q)])
+# ac_s=np.zeros([len(disc_v), len(disc_q)])
 
-for i in range(len(disc_q)):
-    for j in range (len(disc_v)):
-        coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([disc_q[i],disc_v[j],2], Estratégia, rdp=True)
-        ar[j, i]=acc
-        ac_s[j, i]=acc_s
-        ac[j, i]=len(coef)
+# for i in range(len(disc_q)):
+#     for j in range (len(disc_v)):
+#         coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([disc_q[i],disc_v[j],2], Estratégia, rdp=False)
+#         ar[j, i]=acc
+#         ac_s[j, i]=acc_s
+#         ac[j, i]=len(coef)
 
-# Convert the arrays to DataFrames
-df1 = pd.DataFrame(ar)
-df2 = pd.DataFrame(ac)
-df3 = pd.DataFrame(ac_s)
-# Create a Pandas Excel writer object
-with pd.ExcelWriter('output.xlsx') as writer:
-    df1.to_excel(writer, sheet_name='Array1', index=False)
-    df2.to_excel(writer, sheet_name='Array2', index=False)
-    df3.to_excel(writer, sheet_name='Array3', index=False)
+# # Convert the arrays to DataFrames
+# df1 = pd.DataFrame(ar)
+# df2 = pd.DataFrame(ac)
+# df3 = pd.DataFrame(ac_s)
+# # Create a Pandas Excel writer object
+# with pd.ExcelWriter('output.xlsx') as writer:
+#     df1.to_excel(writer, sheet_name='Array1', index=False)
+#     df2.to_excel(writer, sheet_name='Array2', index=False)
+#     df3.to_excel(writer, sheet_name='Array3', index=False)
 # print("Arrays have been written to output.xlsx")
 
 
