@@ -142,7 +142,7 @@ class FPH():
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (2/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (2/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])        
         
            
-        self.vert_var = np.linspace(0, 13000-max(self.vazao_usina), disc[2])           
+        self.vert_var = np.linspace(0, vaz_ext-max(self.vazao_usina), disc[2])           
         if vqmax == True:
             self.vazao_usina = np.linspace(max(self.vazao_usina), max(self.vazao_usina), 1) 
             self.vol_var = np.linspace(max(self.vol_var), max(self.vol_var), 1)
@@ -496,10 +496,11 @@ FPH = FPH()
 
 #Estratégia = 'Individual'
 Estratégia = 'Agregada'
-#Reg = 0
+Reg = 0
 #Reg = 'SR'
-Reg  = uhe['tipo_reg']
+#Reg  = uhe['tipo_reg']
 FPHA_Adj = True
+vaz_ext = 13000
 #grp = 2
 
 
@@ -517,11 +518,11 @@ FPH_Linear = FPH_Linear()
 #coef  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
 #coef  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False, NUG = 1)
 
-coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=True)
+coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([20,4,2], Estratégia, rdp=False)
 
 len(coef_s)
 
-
+aaaa
 #coef, coef_s, acc,  fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
 #len(coef)
 #coef = FPH_Linear.PWL_MQ([5,5], Estratégia, 4, rdp=False, NUG = 1)
@@ -536,30 +537,32 @@ FPH.Plota_FPH(fph_linear)
 #%%
 #DIsc x Erro
 # disc_q = [2, 4, 5, 6, 8, 10, 20, 30, 40, 50]
-#disc_q = [2, 4, 5, 6, 8, 10, 20]
-#disc_v = [2, 4, 5, 6, 8, 10, 20]
 # disc_v = [2]
-# ar=np.zeros([len(disc_v), len(disc_q)])
-# ac=np.zeros([len(disc_q), len(disc_q)])
-# ac_s=np.zeros([len(disc_v), len(disc_q)])
 
-# for i in range(len(disc_q)):
-#     for j in range (len(disc_v)):
-#         coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([disc_q[i],disc_v[j],2], Estratégia, rdp=False)
-#         ar[j, i]=acc
-#         ac_s[j, i]=acc_s
-#         ac[j, i]=len(coef)
+disc_q = [2, 4, 5, 6, 8, 10, 20]
+disc_v = [2, 4, 5, 6, 8, 10, 20]
 
-# # Convert the arrays to DataFrames
-# df1 = pd.DataFrame(ar)
-# df2 = pd.DataFrame(ac)
-# df3 = pd.DataFrame(ac_s)
-# # Create a Pandas Excel writer object
-# with pd.ExcelWriter('output.xlsx') as writer:
-#     df1.to_excel(writer, sheet_name='Array1', index=False)
-#     df2.to_excel(writer, sheet_name='Array2', index=False)
-#     df3.to_excel(writer, sheet_name='Array3', index=False)
-# print("Arrays have been written to output.xlsx")
+ar=np.zeros([len(disc_v), len(disc_q)])
+ac=np.zeros([len(disc_q), len(disc_q)])
+ac_s=np.zeros([len(disc_v), len(disc_q)])
+
+for i in range(len(disc_q)):
+    for j in range (len(disc_v)):
+        coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([disc_q[i],disc_v[j],2], Estratégia, rdp=False)
+        ar[j, i]=acc
+        ac_s[j, i]=acc_s
+        ac[j, i]=len(coef)
+
+# Convert the arrays to DataFrames
+df1 = pd.DataFrame(ar)
+df2 = pd.DataFrame(ac)
+df3 = pd.DataFrame(ac_s)
+# Create a Pandas Excel writer object
+with pd.ExcelWriter('output.xlsx') as writer:
+    df1.to_excel(writer, sheet_name='Array1', index=False)
+    df2.to_excel(writer, sheet_name='Array2', index=False)
+    df3.to_excel(writer, sheet_name='Array3', index=False)
+print("Arrays have been written to output.xlsx")
 
 
 ############################################Escrever Resultados da Linearização##########################################################################################################    
