@@ -64,7 +64,7 @@ class FPH():
    
     def RDP(self, fph):
                    
-        fph = rdp(fph,epsilon=0.2) 
+        fph = rdp(fph,epsilon=0.0001) 
        
         return fph   
     def fph_out(self, disc, Estratégia = 'Agregada', rdp = False, *args, **kwargs):
@@ -86,9 +86,12 @@ class FPH():
             
         #Discretização
         self.vazao_usina = np.linspace(0, self.q_max, disc[0])
-        
-        self.vol_var = np.linspace(uhe['vol_min'], uhe['vol_max'], disc[1]) #
-                ##self.vol_var = np.linspace(Vini*(1-0.00001),Vini*(1+0.00001))
+               
+        if uhe['vol_min']==uhe['vol_max']:
+                self.vol_var = np.linspace(Vini*(1-0.00001),Vini*(1+0.00001))
+        else:
+                self.vol_var = np.linspace(uhe['vol_min'], uhe['vol_max'], disc[1]) 
+                
         if Reg == 'M':
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (1/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (1/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])             
         if Reg=='SR':
@@ -133,9 +136,11 @@ class FPH():
          #FPH com vertimento                
 
         self.vazao_usina = np.linspace(0, self.q_max, disc[0])
-        
-        self.vol_var = np.linspace(uhe['vol_min'], uhe['vol_max'], disc[1]) #   
-        #self.vol_var = np.linspace(Vini*(1-0.00001),Vini*(1+0.00001))
+                
+        if uhe['vol_min']==uhe['vol_max']:
+                self.vol_var = np.linspace(Vini*(1-0.00001),Vini*(1+0.00001))
+        else:
+                self.vol_var = np.linspace(uhe['vol_min'], uhe['vol_max'], disc[1]) 
         
         if Reg == 'M':
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (1/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (1/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])             
@@ -335,21 +340,24 @@ class FPH_Linear():
         self.coef = self.coef*ajuste
         #Adição Vertimento      
         for co in self.coef:
-            n.setObjective((1/M)*(quicksum(fph_s[i][-1]-(self.lin_fph_s(fph_s[i][0],fph_s[i][1],co)+y*fph_s[i][2]) for i in range(M))**2), GRB.MINIMIZE)  
-            n.write("retricoes_vertimento_sec.lp")
-            n.Params.timeLimit = 120
-            n.params.MIPGap = 0.0000001
-            n.optimize()   
-                             
-            if n.status == GRB.Status.OPTIMAL:
-                fobj = n.objVal
-                CB = y.X
+            if uhe['inf_canal_fuga'] == 1:
+                n.setObjective((1/M)*(quicksum(fph_s[i][-1]-(self.lin_fph_s(fph_s[i][0],fph_s[i][1],co)+y*fph_s[i][2]) for i in range(M))**2), GRB.MINIMIZE)  
+                n.write("retricoes_vertimento_sec.lp")
+                n.Params.timeLimit = 120
+                n.params.MIPGap = 0.0000001
+                n.optimize()   
+                                 
+                if n.status == GRB.Status.OPTIMAL:
+                    fobj = n.objVal
+                    CB = y.X
+            else:
+                    CB = 0
             coeficientes.append([co[0], co[1], CB, co[2]])    #Desativar caso ative o código acima
                       
         self.coef_s = np.array(coeficientes)
-        fph, fphl, acc  = self.fph_out_linear(Estratégia) #somente para q, v, s
-        fph, fphl, acc_s  = self.fph_out_linear_s(Estratégia) #somente para q, v, s
-        #fph, fphl, acc  = self.fph_out_linear(Estratégia) #somente para q, v, s
+        self.coef_s = np.unique(self.coef_s, axis=0)
+        fph, fphl, acc  = self.fph_out_linear(Estratégia) 
+        fph, fphl, acc_s  = self.fph_out_linear_s(Estratégia) 
         acc_s = acc_s + acc
         
         return self.coef, self.coef_s, acc, acc_s, fph, fphl, fph_s, ajuste
@@ -482,7 +490,8 @@ class FPH_SEL():
 'Carregando Dados:'
 plt.close('all')
 Caso = Newave('NEWAVE') #Lê os dados do Newave
-uhe = Caso.hidr.get('Promissao')
+
+uhe = Caso.hidr.get('G.B. Munhoz')
 #Volume
 
 Vini = uhe['vol_min'] + (1/2)*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
@@ -497,19 +506,10 @@ FPHA_Adj = True
 Estratégia = 'Agregada'
 #grp = 2
 
-MLT_MAX = 1217
+MLT_MAX = 920
 
-
-
-Reg = 'None'
-#Reg  = uhe['tipo_reg']
-
-
-
-
-
-
-
+#Reg = 'None'
+Reg  = uhe['tipo_reg']
 
 
 #Extração de pontos FPH
@@ -682,7 +682,10 @@ print(df3)
 with pd.ExcelWriter('FPH-Coef-'+Reg+uhe['nome']+'-.xlsx') as writer:
     df2.to_excel(writer, sheet_name='Dados_Gerais_1')
     df.to_excel(writer, sheet_name='Dados_Gerais_2')
-    df3.to_excel(writer, sheet_name='Cortes_FPH_Linear')
+    if Reg == 'None':
+        df3.to_excel(writer, sheet_name='Cortes_FPH_Linear')
+    else:
+        df3.to_excel(writer, sheet_name='Cortes_FPH_Linear_DESSEM')
     df4.to_excel(writer, sheet_name='All_Data')
     
     
