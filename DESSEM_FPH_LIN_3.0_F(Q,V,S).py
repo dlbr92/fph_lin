@@ -508,7 +508,7 @@ Estratégia = 'Agregada'
 
 MLT_MAX = 920
 
-#Reg = 'None'
+#Reg = 'None'###
 Reg  = uhe['tipo_reg']
 
 
