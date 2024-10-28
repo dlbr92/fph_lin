@@ -491,7 +491,7 @@ class FPH_SEL():
 plt.close('all')
 Caso = Newave('NEWAVE') #Lê os dados do Newave
 
-uhe = Caso.hidr.get('G.B. Munhoz')
+uhe = Caso.hidr.get('Foz Chapeco')
 #Volume
 
 Vini = uhe['vol_min'] + (1/2)*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
@@ -506,9 +506,9 @@ FPHA_Adj = True
 Estratégia = 'Agregada'
 #grp = 2
 
-MLT_MAX = 920
+MLT_MAX = 1904
 
-#Reg = 'None'###
+#Reg = 'None'
 Reg  = uhe['tipo_reg']
 
 
@@ -526,7 +526,7 @@ FPH_Linear = FPH_Linear()
 #coef  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
 #coef  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False, NUG = 1)
 
-coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
+coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=True)
 
 len(coef_s)
 
