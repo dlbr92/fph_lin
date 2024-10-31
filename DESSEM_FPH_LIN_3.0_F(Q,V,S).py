@@ -40,8 +40,8 @@ class FPH():
         self.PCA = uhe['pol_cota_area'] #Cota Áreas
         self.PCV = uhe['pol_cota_vol'] #Cota volume
         self.PVNJ = uhe['pol_vaz_niv_jus'] #Cota volumeuhe['pol_vaz_niv_jus']
-    
-        
+        #self.PVNJ = [98.62000274658203, 0.00001, 0, 0, 0, 0.0] #Verificar peculiaridade de ilha pombos
+        #self.PVNJ = [98.62000274658203,  0.0228704996407032, -6.099928941694088e-05, 9.000285672300379e-08, -4.9799688678353604e-11, 0.0]
     
     def FCM(self, Volume):
         cota_montante = 0
@@ -485,7 +485,7 @@ class FPH_SEL():
 plt.close('all')
 Caso = Newave('NEWAVE') #Lê os dados do Newave
 
-uhe = Caso.hidr.get('Sobragi')
+uhe = Caso.hidr.get('Candonga')
 #Volume
 
 Vini = uhe['vol_min'] + (1/2)*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
@@ -500,10 +500,11 @@ FPHA_Adj = True
 Estratégia = 'Agregada'
 #grp = 2
 
-MLT_MAX = 125
+MLT_MAX = 262
 
-Reg = 'None'
-#Reg  = uhe['tipo_reg']
+
+#Reg = 'None'
+Reg  = uhe['tipo_reg']
 
 
 #Extração de pontos FPH
