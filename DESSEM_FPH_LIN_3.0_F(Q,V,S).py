@@ -485,7 +485,7 @@ class FPH_SEL():
 plt.close('all')
 Caso = Newave('NEWAVE') #Lê os dados do Newave
 
-uhe = Caso.hidr.get('Candonga')
+uhe = Caso.hidr.get('Moxoto')
 #Volume
 
 Vini = uhe['vol_min'] + (1/2)*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
@@ -500,10 +500,9 @@ FPHA_Adj = True
 Estratégia = 'Agregada'
 #grp = 2
 
-MLT_MAX = 262
+MLT_MAX = 4820
 
-
-#Reg = 'None'
+#Reg = 'V_Faixa'
 Reg  = uhe['tipo_reg']
 
 
@@ -587,18 +586,18 @@ Corte =  np.linspace(0, len(coef_s), len(coef_s)+1)
 # with pd.ExcelWriter('FPH-LinearxNLinear.xlsx') as writer:
 #       df2.to_excel(writer, sheet_name='FPHxFPHL'+uhe['nome'])
 
-Q1 = np.array(fph[:,0])
-V1=  np.array(fph[:,1])
-#S1 = np.array(fph[:,2])
-P1 = np.array(fph[:,2])
-P2 = np.array(fph1[:,2])
+# Q1 = np.array(fph[:,0])
+# V1=  np.array(fph[:,1])
+# #S1 = np.array(fph[:,2])
+# P1 = np.array(fph[:,2])
+# P2 = np.array(fph1[:,2])
 
-columns_2=['Q','V','PG','PGLinear']
-df2 = pd.DataFrame(list(zip(Q1, V1, P1, P2)), columns=columns_2)
+# columns_2=['Q','V','PG','PGLinear']
+# df2 = pd.DataFrame(list(zip(Q1, V1, P1, P2)), columns=columns_2)
 
    
-with pd.ExcelWriter('FPH-LinearxNLinear.xlsx') as writer:
-      df2.to_excel(writer, sheet_name='FPHxFPHL'+uhe['nome'])
+# with pd.ExcelWriter('FPH-LinearxNLinear.xlsx') as writer:
+#       df2.to_excel(writer, sheet_name='FPHxFPHL'+uhe['nome'])
 
 
 Corte = np.linspace(0, len(coef_s), len(coef_s) + 1)
@@ -662,14 +661,28 @@ df4 = df4.T
 columns_3 = ['Corte', 'Coef_Q', 'Coef_V', 'Coef_S', 'Coef_Independente', 'MAPE', 'MAPE_S']
 df3 = pd.DataFrame(list(zip(Corte, Q, V, S, I, TSF, TSF1)), columns=columns_3)
 print(df3)
-with pd.ExcelWriter('FPH-Coef-'+Reg+uhe['nome']+'-.xlsx') as writer:
+
+output_folder = "C:/Users/Pichau/Documents/GitHub/fph_lin/FPH_Linear/"
+output_file = f"{output_folder}{uhe['codigo']}-FPH-Relatório-Reg-{Reg}-{uhe['nome']}.xlsx"
+
+with pd.ExcelWriter(output_file) as writer:
     df2.to_excel(writer, sheet_name='Dados_Gerais_1')
     df.to_excel(writer, sheet_name='Dados_Gerais_2')
-    if Reg == 'None':
-        df3.to_excel(writer, sheet_name='Cortes_FPH_Linear')
+    if Reg == 'V_Faixa':
+        df3.to_excel(writer, sheet_name='Cortes_FPH_Linear_V_Faixa')
     else:
         df3.to_excel(writer, sheet_name='Cortes_FPH_Linear_DESSEM')
     df4.to_excel(writer, sheet_name='All_Data')
+
+
+# with pd.ExcelWriter('FPH-Relatório-Reg-'+Reg+'-'+uhe['nome']+'.xlsx') as writer:
+#     df2.to_excel(writer, sheet_name='Dados_Gerais_1')
+#     df.to_excel(writer, sheet_name='Dados_Gerais_2')
+#     if Reg == 'None':
+#         df3.to_excel(writer, sheet_name='Cortes_FPH_Linear')
+#     else:
+#         df3.to_excel(writer, sheet_name='Cortes_FPH_Linear_DESSEM')
+#     df4.to_excel(writer, sheet_name='All_Data')
     
     
 # print(acc)

@@ -40,8 +40,8 @@ class FPH():
         self.PCA = uhe['pol_cota_area'] #Cota Áreas
         self.PCV = uhe['pol_cota_vol'] #Cota volume
         self.PVNJ = uhe['pol_vaz_niv_jus'] #Cota volumeuhe['pol_vaz_niv_jus']
-    
-        
+        #self.PVNJ = [98.62000274658203, 0.00001, 0, 0, 0, 0.0] #Verificar peculiaridade de ilha pombos
+        #self.PVNJ = [98.62000274658203,  0.0228704996407032, -6.099928941694088e-05, 9.000285672300379e-08, -4.9799688678353604e-11, 0.0]
     
     def FCM(self, Volume):
         cota_montante = 0
@@ -218,9 +218,16 @@ class FPH_Linear():
     def __init__(self):
         self.fph = list()
         self.q_max = 0
+        self.const_fcj = self.is_constant(FPH.PVNJ)
+        self.const_fcm = self.is_constant(FPH.PCV)
+        
         for i in range(uhe['num_conj_maq']):
             self.q_max=self.q_max+uhe['maq_por_conj'][i]*uhe['vaz_efet_conj'][i]
     
+    def is_constant(self, polynomial):
+        # Check if all coefficients except the first one are zero
+        return all(coef == 0 for coef in polynomial[1:])
+
     def PWL_CHULL(self, disc, Estratégia, rdp=False, *args, **kwargs):
         
         if Estratégia == 'Agregada':
@@ -231,129 +238,142 @@ class FPH_Linear():
                 self.NUG = kwargs.get('NUG', None)
         if Estratégia == 'Individual':
             self.NUG = 1
-            
         self.fph = FPH.fph_out(disc, Estratégia, rdp=rdp, NUG = self.NUG)
         fph = self.fph
         self.fph_s = FPH.fph_out_s(disc, Estratégia, rdp=rdp, vqmax = True)
-        fph_s = self.fph_s
-        M = len(fph_s)
-
-        N = len(fph)
-        Pontos =[]
-        #coef_ajust = 1
-        Pontos.append(self.fph)
-        
-        Planos = []
-        NTugs = 1 #Futuramente sera alterado para compreender usinas com mais de dois grupos de unidades
-        for i in range(NTugs):
-            Planos.append(ConvexHull(Pontos[i]).equations) # as grandezas saem na mesma sequência que a do vetor "Pontos", nesse caso: (HB, W, PG , termo independente)
-
-        ## Excluindo Equações que dizem que "PG*0"
-        excluir1 = []
-        for i in range(NTugs):
-            excluir1_aux = []
-            for j in range(len(Planos[i])):
-                if Planos[i][j][2] != 0:
-                    Planos[i][j] = -Planos[i][j]/Planos[i][j][2]
-                else:
-                    excluir1_aux.append(j)
-            excluir1.append(np.array(excluir1_aux, dtype = np.int64))
-            ## Deletando linhas (equações fornecidas pelo CH)
-            Planos[i] = np.delete(Planos[i], excluir1[i], axis = 0)
+        fph_s = self.fph_s       
+        if self.const_fcj and self.const_fcm:
+            acc=0
+            acc_s=0
+            fph = self.fph
+            fphl = self.fph
+            fph_s = self.fph_s
+            ajuste = 1           
+            prod = uhe['prod_esp']*(FPH.PCV[0]-FPH.PVNJ[0])            
+            self.coef = np.array([[prod,0,0]])
+            self.coef_s =np.array([[prod,0,0,0]])
+            fph, fphl, acc  = self.fph_out_linear(Estratégia) 
+            fph, fphl, acc_s  = self.fph_out_linear_s(Estratégia) 
+        else:
+            M = len(fph_s)    
+            N = len(fph)
+            Pontos =[]
+            #coef_ajust = 1
+            Pontos.append(self.fph)
             
-        excluir = []
-        Dif = []
-        for i in range(NTugs):
-            Wint = []
-            Wint_aux = []
-            HBint = []
-            HBint_aux = []
-            PGaux = []
-            excluir_aux = []
-            #Pontos_aux = []
-            for p in range(len(Planos[i])):
-                if p == 0:
-                    for k in range(len(Pontos[i])):
-                        Wint_aux.append(Pontos[i][k][1])
-                        HBint_aux.append(Pontos[i][k][0])
-                Wint.append(np.array(Wint_aux, dtype = np.float64)) #np.arange(Pontos[0][0][0], Pontos[i][len(Pontos[0]) - 1][0] + 0.0001, round(Pontos[0][1][0] - Pontos[0][0][0],8)))
-                HBint.append(np.array(HBint_aux, dtype = np.float64))
-                # Potência do hull em todos os pontos "qs" fornecidos
-                PGaux.append(np.array(Planos[i][p][0]*HBint[p] + Planos[i][p][1]*Wint[p] + Planos[i][p][3], dtype = np.float64))
-                #Pontos_aux.append(np.array([HBint[p], Wint[p]]))
-                
-            # Comparando o "p" do hull com o "p" original
-            for q in range(len(Planos[i])):
-                for r in range(len(Wint[i])):
-                    if round(PGaux[q][r],7) < round(Pontos[i][r][len(Pontos[i][r])-1],7):
-                        excluir_aux.append(q)
-                        break
-            ## Obtendo a diferença entre o p original e o p aproximado
-            for q in range(len(Planos[i])):
-                Difaux = []
-                for r in range(len(Wint[i])):
-                    Difaux.append(PGaux[q][r] - Pontos[i][r][len(Pontos[i][r])-1])
-                if i == 0:
-                    Dif.append(np.array(Difaux, dtype = np.float64))
-        # Adicionando os planos a serem excluidos
-            excluir.append(np.array(excluir_aux, dtype=np.int64))
-        ## Deletando linhas (equações fornecidas pelo CH)
-            Planos[i] = np.delete(Planos[i],excluir[i], axis = 0)            
-          #  Pontos_aux[i] = np.delete(Pontos_aux[i],excluir[i], axis = 0) 
-        self.coef = Planos
-        self.coef = np.delete(self.coef, 2, 2)[0]
-   
-        n= Model("vert")
-        k = Model("ajuste")
-        fobj, Y = [], []
-        y = n.addVar(lb=-1000, ub=0, name="S_coef")
-        coef_a = k.addVar(lb=0, ub=1, name="coef_ajuste")
-
-    #----------------------------------------------------------
-    #-------------------- RESTRIÇÕES --------------------------
-    #----------------------------------------------------------
-        coeficientes = []
-        ajuste = 1
-    # Objetive Function 
-    #Correção FPHA
-
-        if FPHA_Adj:
-            k.setObjective((1/N)*(quicksum(fph[i][-1]-coef_a*(self.lin_fph(fph[i][0],fph[i][1])) for i in range(N))**2), GRB.MINIMIZE)  
-            k.write("retricoes_corretor.lp")
-            k.Params.timeLimit = 120
-            k.params.MIPGap = 0.0000001
-            k.optimize()   
-                             
-            if k.status == GRB.Status.OPTIMAL:
-                fobj = k.objVal
-                ajuste = coef_a.X
-            #coeficientes.append([co[0], co[1], co[2]])    #Desativar caso ative o código acima
-        self.coef = self.coef*ajuste
-        #Adição Vertimento      
-        for co in self.coef:
-            if uhe['inf_canal_fuga'] == 1:
-                n.setObjective((1/M)*(quicksum(fph_s[i][-1]-(self.lin_fph_s(fph_s[i][0],fph_s[i][1],co)+y*fph_s[i][2]) for i in range(M))**2), GRB.MINIMIZE)  
-                n.write("retricoes_vertimento_sec.lp")
-                n.Params.timeLimit = 120
-                n.params.MIPGap = 0.0000001
-                n.optimize()   
-                                 
-                if n.status == GRB.Status.OPTIMAL:
-                    fobj = n.objVal
-                    CB = y.X
-            else:
-                    CB = 0
-            coeficientes.append([co[0], co[1], CB, co[2]])    #Desativar caso ative o código acima
-                      
-        self.coef_s = np.array(coeficientes)
-        self.coef_s = np.unique(self.coef_s, axis=0)
-        fph, fphl, acc  = self.fph_out_linear(Estratégia) 
-        fph, fphl, acc_s  = self.fph_out_linear_s(Estratégia) 
-        acc_s = acc_s + acc
-        
-        return self.coef, self.coef_s, acc, acc_s, fph, fphl, fph_s, ajuste
-        
+            Planos = []
+            NTugs = 1 #Futuramente sera alterado para compreender usinas com mais de dois grupos de unidades
+            for i in range(NTugs):
+                Planos.append(ConvexHull(Pontos[i]).equations) # as grandezas saem na mesma sequência que a do vetor "Pontos", nesse caso: (HB, W, PG , termo independente)
     
+            ## Excluindo Equações que dizem que "PG*0"
+            excluir1 = []
+            for i in range(NTugs):
+                excluir1_aux = []
+                for j in range(len(Planos[i])):
+                    if Planos[i][j][2] != 0:
+                        Planos[i][j] = -Planos[i][j]/Planos[i][j][2]
+                    else:
+                        excluir1_aux.append(j)
+                excluir1.append(np.array(excluir1_aux, dtype = np.int64))
+                ## Deletando linhas (equações fornecidas pelo CH)
+                Planos[i] = np.delete(Planos[i], excluir1[i], axis = 0)
+                
+            excluir = []
+            Dif = []
+            for i in range(NTugs):
+                Wint = []
+                Wint_aux = []
+                HBint = []
+                HBint_aux = []
+                PGaux = []
+                excluir_aux = []
+                #Pontos_aux = []
+                for p in range(len(Planos[i])):
+                    if p == 0:
+                        for k in range(len(Pontos[i])):
+                            Wint_aux.append(Pontos[i][k][1])
+                            HBint_aux.append(Pontos[i][k][0])
+                    Wint.append(np.array(Wint_aux, dtype = np.float64)) #np.arange(Pontos[0][0][0], Pontos[i][len(Pontos[0]) - 1][0] + 0.0001, round(Pontos[0][1][0] - Pontos[0][0][0],8)))
+                    HBint.append(np.array(HBint_aux, dtype = np.float64))
+                    # Potência do hull em todos os pontos "qs" fornecidos
+                    PGaux.append(np.array(Planos[i][p][0]*HBint[p] + Planos[i][p][1]*Wint[p] + Planos[i][p][3], dtype = np.float64))
+                    #Pontos_aux.append(np.array([HBint[p], Wint[p]]))
+                    
+                # Comparando o "p" do hull com o "p" original
+                for q in range(len(Planos[i])):
+                    for r in range(len(Wint[i])):
+                        if round(PGaux[q][r],7) < round(Pontos[i][r][len(Pontos[i][r])-1],7):
+                            excluir_aux.append(q)
+                            break
+                ## Obtendo a diferença entre o p original e o p aproximado
+                for q in range(len(Planos[i])):
+                    Difaux = []
+                    for r in range(len(Wint[i])):
+                        Difaux.append(PGaux[q][r] - Pontos[i][r][len(Pontos[i][r])-1])
+                    if i == 0:
+                        Dif.append(np.array(Difaux, dtype = np.float64))
+            # Adicionando os planos a serem excluidos
+                excluir.append(np.array(excluir_aux, dtype=np.int64))
+            ## Deletando linhas (equações fornecidas pelo CH)
+                Planos[i] = np.delete(Planos[i],excluir[i], axis = 0)            
+              #  Pontos_aux[i] = np.delete(Pontos_aux[i],excluir[i], axis = 0) 
+            self.coef = Planos
+            self.coef = np.delete(self.coef, 2, 2)[0]
+       
+            n= Model("vert")
+            k = Model("ajuste")
+            fobj, Y = [], []
+            y = n.addVar(lb=-1000, ub=0, name="S_coef")
+            coef_a = k.addVar(lb=0, ub=1, name="coef_ajuste")
+    
+        #----------------------------------------------------------
+        #-------------------- RESTRIÇÕES --------------------------
+        #----------------------------------------------------------
+            coeficientes = []
+            ajuste = 1
+        # Objetive Function 
+        #Correção FPHA
+    
+            if FPHA_Adj:
+                k.setObjective((1/N)*(quicksum(fph[i][-1]-coef_a*(self.lin_fph(fph[i][0],fph[i][1])) for i in range(N))**2), GRB.MINIMIZE)  
+                k.write("retricoes_corretor.lp")
+                k.Params.timeLimit = 120
+                k.params.MIPGap = 0.0000001
+                k.optimize()   
+                                 
+                if k.status == GRB.Status.OPTIMAL:
+                    fobj = k.objVal
+                    ajuste = coef_a.X
+                #coeficientes.append([co[0], co[1], co[2]])    #Desativar caso ative o código acima
+            self.coef = self.coef*ajuste
+            #Adição Vertimento      
+            for co in self.coef:
+                if uhe['inf_canal_fuga'] == 1 and self.const_fcj==False:
+                    n.setObjective((1/M)*(quicksum(fph_s[i][-1]-(self.lin_fph_s(fph_s[i][0],fph_s[i][1],co)+y*fph_s[i][2]) for i in range(M))**2), GRB.MINIMIZE)  
+                    n.write("retricoes_vertimento_sec.lp")
+                    n.Params.timeLimit = 120
+                    n.params.MIPGap = 0.0000001
+                    n.optimize()   
+                                     
+                    if n.status == GRB.Status.OPTIMAL:
+                        fobj = n.objVal
+                        CB = y.X
+                else:
+                        CB = 0
+                coeficientes.append([co[0], co[1], CB, co[2]])    #Desativar caso ative o código acima
+                          
+            self.coef_s = np.array(coeficientes)
+            self.coef_s = np.unique(self.coef_s, axis=0)
+            fph, fphl, acc  = self.fph_out_linear(Estratégia) 
+            fph, fphl, acc_s  = self.fph_out_linear_s(Estratégia) 
+            acc_s = acc_s + acc
+            print(f"Usina {uhe['nome'].strip()}: O Erro Médio Absoluto é de {acc}")
+            print(f"Usina {uhe['nome'].strip()}: A Erro Médio Absoluto (com vertimento) é de {acc_s}") 
+        return self.coef, self.coef_s, acc, acc_s, fph, fphl, fph_s, ajuste
+   
+
+            
     def lin_fph_s(self, q, v, co):
         coef = co
         return q*coef[0]+v*coef[1]+coef[2]
@@ -385,7 +405,7 @@ class FPH_Linear():
         #acc = mean_absolute_error(fph[:,-1], fphl[:,-1])
         amostra = len(fphl)
         #print(f"Usina {uhe['nome'].strip()}: A Precisão da Linearização é de {acc*100}%")  
-        print(f"Usina {uhe['nome'].strip()}: O Erro Médio Absoluto é de {acc}")
+        #print(f"Usina {uhe['nome'].strip()}: O Erro Médio Absoluto é de {acc}")
         #print(f"Usina {uhe['nome'].strip()}: A Precisão da Linearização é de {acc}")                      
         return fph, fphl, acc     
     
@@ -419,7 +439,7 @@ class FPH_Linear():
         #acc = mape(fph[:,-1], fphl[:,-1])
         #acc = mse(fph[:,-1], fphl[:,-1])
         amostra = len(fphl)
-        print(f"Usina {uhe['nome'].strip()}: A Erro Médio Absoluto (com vertimento) é de {acc}") 
+       # print(f"Usina {uhe['nome'].strip()}: A Erro Médio Absoluto (com vertimento) é de {acc}") 
        # print(f"Usina {uhe['nome'].strip()}: A Precisão da Linearização é de {acc*100}%")   
                      
         return fph, fphl, acc  
@@ -477,7 +497,7 @@ class FPH_SEL():
 plt.close('all')
 Caso = Newave('NEWAVE') #Lê os dados do Newave
 
-uhe = Caso.hidr.get('Jirau')
+uhe = Caso.hidr.get('Xingo')
 #Volume
 
 Vini = uhe['vol_min'] + (1/2)*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
@@ -492,91 +512,90 @@ FPHA_Adj = True
 Estratégia = 'Agregada'
 #grp = 2
 
-MLT_MAX = 35067
-
-#Reg = 'None'
+MLT_MAX = 1800
+#Reg = 'V_Faixa'
 Reg  = uhe['tipo_reg']
 
 
 #Extração de pontos FPH
-# fph = FPH.fph_out([5,5], Estratégia = 'Agregada', rdp=False)
-# #fph = FPH.fph_out([10,10], Estratégia = 'Agregada', rdp=False, NUG = 2)
-# #FPH.Plota_Rendimento()
-# FPH.Plota_FPH(fph)
-# FPH.Plota_FCM()
-# FPH.Plota_FCJ()
-# #aaa
-# #%%
-# #--------------------------------------------------Inicializa Parâmetros de Linearização----------------------------------------------------------------------------------------------------------------# 
-# FPH_Linear = FPH_Linear()
+fph = FPH.fph_out([5,5], Estratégia = 'Agregada', rdp=False)
+#fph = FPH.fph_out([10,10], Estratégia = 'Agregada', rdp=False, NUG = 2)
+#FPH.Plota_Rendimento()
+FPH.Plota_FPH(fph)
+FPH.Plota_FCM()
+FPH.Plota_FCJ()
+#aaa
+#%%
+#--------------------------------------------------Inicializa Parâmetros de Linearização----------------------------------------------------------------------------------------------------------------# 
+FPH_Linear = FPH_Linear()
 #coef  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
 #coef  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False, NUG = 1)
 
-# coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=True)
+coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
 
-# len(coef_s)
+len(coef_s)
 
-
-# #coef, coef_s, acc,  fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
-# #len(coef)
-# #coef = FPH_Linear.PWL_MQ([5,5], Estratégia, 4, rdp=False, NUG = 1)
-
-
+#aaaa
+#coef, coef_s, acc,  fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([5,5,2], Estratégia, rdp=False)
+#len(coef)
+#coef = FPH_Linear.PWL_MQ([5,5], Estratégia, 4, rdp=False, NUG = 1)
 
 
-# fph_n_linear, fph_linear, acc = FPH_Linear.fph_out_linear(Estratégia)
-# FPH.Plota_FPH(fph_n_linear)
-# FPH.Plota_FPH(fph_linear)
-
-# #%%
-# # #DIsc x Erro
-# # # #disc_q = [2, 4, 5, 6, 8, 10, 20, 30, 40, 50]
-# # disc_v = [1]
-
-# # disc_q = [3, 4, 5, 6, 8, 10, 20]
-# # #disc_v = [2, 4, 5, 6, 8, 10, 20]
-
-# # ar=np.zeros([len(disc_v), len(disc_q)])
-# # ac=np.zeros([len(disc_q), len(disc_q)])
-# # ac_s=np.zeros([len(disc_v), len(disc_q)])
-
-# # for i in range(len(disc_q)):
-# #     for j in range (len(disc_v)):
-# #         coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([disc_q[i],disc_v[j],2], Estratégia, rdp=False)
-# #         ar[j, i]=acc
-# #         ac_s[j, i]=acc_s
-# #         ac[j, i]=len(coef)
-
-# # # Convert the arrays to DataFrames
-# # df1 = pd.DataFrame(ar)
-# # df2 = pd.DataFrame(ac)
-# # df3 = pd.DataFrame(ac_s)
-# # # Create a Pandas Excel writer object
-# # with pd.ExcelWriter('output.xlsx') as writer:
-# #     df1.to_excel(writer, sheet_name='Array1', index=False)
-# #     df2.to_excel(writer, sheet_name='Array2', index=False)
-# #     df3.to_excel(writer, sheet_name='Array3', index=False)
-# # print("Arrays have been written to output.xlsx")
 
 
-# ############################################Escrever Resultados da Linearização##########################################################################################################    
+fph_n_linear, fph_linear, acc = FPH_Linear.fph_out_linear(Estratégia)
+FPH.Plota_FPH(fph_n_linear)
+FPH.Plota_FPH(fph_linear)
 
-# #Q,V,S###############################################################################################################
+#%%
+# #DIsc x Erro
+# # #disc_q = [2, 4, 5, 6, 8, 10, 20, 30, 40, 50]
+# disc_v = [1]
 
-# Corte =  np.linspace(0, len(coef_s), len(coef_s)+1)
+# disc_q = [3, 4, 5, 6, 8, 10, 20]
+# #disc_v = [2, 4, 5, 6, 8, 10, 20]
 
-# # Q1 = np.array(fph[:,0])
-# # V1=  np.array(fph[:,1])
-# # S1 = np.array(fph[:,2])
-# # P1 = np.array(fph[:,3])
-# # P2 = np.array(fph1[:,3])
+# ar=np.zeros([len(disc_v), len(disc_q)])
+# ac=np.zeros([len(disc_q), len(disc_q)])
+# ac_s=np.zeros([len(disc_v), len(disc_q)])
 
-# # columns_2=['Q','V','S','PG','PGLinear']
-# # df2 = pd.DataFrame(list(zip(Q1, V1, S1, P1, P2)), columns=columns_2)
+# for i in range(len(disc_q)):
+#     for j in range (len(disc_v)):
+#         coef, coef_s, acc, acc_s, fph, fph1, fph_s, co  =  FPH_Linear.PWL_CHULL([disc_q[i],disc_v[j],2], Estratégia, rdp=False)
+#         ar[j, i]=acc
+#         ac_s[j, i]=acc_s
+#         ac[j, i]=len(coef)
+
+# # Convert the arrays to DataFrames
+# df1 = pd.DataFrame(ar)
+# df2 = pd.DataFrame(ac)
+# df3 = pd.DataFrame(ac_s)
+# # Create a Pandas Excel writer object
+# with pd.ExcelWriter('output.xlsx') as writer:
+#     df1.to_excel(writer, sheet_name='Array1', index=False)
+#     df2.to_excel(writer, sheet_name='Array2', index=False)
+#     df3.to_excel(writer, sheet_name='Array3', index=False)
+# print("Arrays have been written to output.xlsx")
+
+
+############################################Escrever Resultados da Linearização##########################################################################################################    
+
+#Q,V,S###############################################################################################################
+
+Corte =  np.linspace(0, len(coef_s), len(coef_s)+1)
+
+# Q1 = np.array(fph[:,0])
+# V1=  np.array(fph[:,1])
+# S1 = np.array(fph[:,2])
+# P1 = np.array(fph[:,3])
+# P2 = np.array(fph1[:,3])
+
+# columns_2=['Q','V','S','PG','PGLinear']
+# df2 = pd.DataFrame(list(zip(Q1, V1, S1, P1, P2)), columns=columns_2)
 
    
-# # with pd.ExcelWriter('FPH-LinearxNLinear.xlsx') as writer:
-# #       df2.to_excel(writer, sheet_name='FPHxFPHL'+uhe['nome'])
+# with pd.ExcelWriter('FPH-LinearxNLinear.xlsx') as writer:
+#       df2.to_excel(writer, sheet_name='FPHxFPHL'+uhe['nome'])
 
 # Q1 = np.array(fph[:,0])
 # V1=  np.array(fph[:,1])
@@ -592,21 +611,21 @@ Reg  = uhe['tipo_reg']
 #       df2.to_excel(writer, sheet_name='FPHxFPHL'+uhe['nome'])
 
 
-# Corte = np.linspace(0, len(coef_s), len(coef_s) + 1)
-# Q = np.array(coef_s[:, 0])
-# V = np.array(coef_s[:, 1])
-# S = np.array(coef_s[:, 2])
-# I = np.array(coef_s[:, 3])
+Corte = np.linspace(0, len(coef_s), len(coef_s) + 1)
+Q = np.array(coef_s[:, 0])
+V = np.array(coef_s[:, 1])
+S = np.array(coef_s[:, 2])
+I = np.array(coef_s[:, 3])
 
 
-# TSF = np.empty(len(coef_s))*np.nan
-# TSF1 = np.empty(len(coef_s))*np.nan
-# # TSF2 = np.empty(len(coef_s))*np.nan
-# TSF[0] = acc
-# TSF1[0] = acc_s
-# # #Perda=((uhe['perda_hid']*2.6)/(uhe['vaz_efet_conj'][0]**2))
-# # print(TSF1[0])
-# # #print(Perda)
+TSF = np.empty(len(coef_s))*np.nan
+TSF1 = np.empty(len(coef_s))*np.nan
+# TSF2 = np.empty(len(coef_s))*np.nan
+TSF[0] = acc
+TSF1[0] = acc_s
+# #Perda=((uhe['perda_hid']*2.6)/(uhe['vaz_efet_conj'][0]**2))
+# print(TSF1[0])
+# #print(Perda)
 #####Polinomios
 # Create two 5-dimensional vectors
 vector0 = uhe['maq_por_conj']
@@ -650,17 +669,31 @@ df4 = pd.DataFrame([uhe]) #CHECK THIS LATER
 df4 = df4.T
 
 # Use square brackets to create a list with a single value for 'R²'
-#columns_3 = ['Corte', 'Coef_Q', 'Coef_V', 'Coef_S', 'Coef_Independente', 'MAPE', 'MAPE_S']
-#df3 = pd.DataFrame(list(zip(Corte, Q, V, S, I, TSF, TSF1)), columns=columns_3)
-#print(df3)
-with pd.ExcelWriter('FPH-Coef-'+Reg+uhe['nome']+'-.xlsx') as writer:
+columns_3 = ['Corte', 'Coef_Q', 'Coef_V', 'Coef_S', 'Coef_Independente', 'MAPE', 'MAPE_S']
+df3 = pd.DataFrame(list(zip(Corte, Q, V, S, I, TSF, TSF1)), columns=columns_3)
+print(df3)
+
+output_folder = "C:/Users/Pichau/Documents/GitHub/fph_lin/FPH_Linear/"
+output_file = f"{output_folder}{uhe['codigo']}-FPH-Relatório-Reg-{Reg}-{uhe['nome']}.xlsx"
+
+with pd.ExcelWriter(output_file) as writer:
     df2.to_excel(writer, sheet_name='Dados_Gerais_1')
     df.to_excel(writer, sheet_name='Dados_Gerais_2')
-    # if Reg == 'None':
-    #     df3.to_excel(writer, sheet_name='Cortes_FPH_Linear')
-    # else:
-    #     df3.to_excel(writer, sheet_name='Cortes_FPH_Linear_DESSEM')
+    if Reg == 'V_Faixa':
+        df3.to_excel(writer, sheet_name='Cortes_FPH_Linear_V_Faixa')
+    else:
+        df3.to_excel(writer, sheet_name='Cortes_FPH_Linear_DESSEM')
     df4.to_excel(writer, sheet_name='All_Data')
+
+
+# with pd.ExcelWriter('FPH-Relatório-Reg-'+Reg+'-'+uhe['nome']+'.xlsx') as writer:
+#     df2.to_excel(writer, sheet_name='Dados_Gerais_1')
+#     df.to_excel(writer, sheet_name='Dados_Gerais_2')
+#     if Reg == 'None':
+#         df3.to_excel(writer, sheet_name='Cortes_FPH_Linear')
+#     else:
+#         df3.to_excel(writer, sheet_name='Cortes_FPH_Linear_DESSEM')
+#     df4.to_excel(writer, sheet_name='All_Data')
     
     
 # print(acc)
