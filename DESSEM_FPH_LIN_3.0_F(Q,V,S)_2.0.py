@@ -497,7 +497,8 @@ class FPH_SEL():
 plt.close('all')
 Caso = Newave('NEWAVE') #Lê os dados do Newave
 
-uhe = Caso.hidr.get('peixe angic')
+uhe = Caso.hidr.get('foz r. claro')
+#uhe = Caso.hidr.get(261)
 #Volume
 
 Vini = uhe['vol_min'] + (1/2)*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
@@ -512,16 +513,16 @@ FPHA_Adj = True
 Estratégia = 'Agregada'
 #grp = 2
 
-MLT_MAX = 3383
+MLT_MAX = 359
  
-Reg = 'V_Faixa'
-#Reg  = uhe['tipo_reg']
+#Reg = 'V_Faixa'
+Reg  = uhe['tipo_reg']
 
 #Extração de pontos FPH
 fph = FPH.fph_out([5,5], Estratégia = 'Agregada', rdp=False)
 #fph = FPH.fph_out([10,10], Estratégia = 'Agregada', rdp=False, NUG = 2)
 #FPH.Plota_Rendimento()
-FPH.Plota_FPH(fph)
+#FPH.Plota_FPH(fph)
 FPH.Plota_FCM()
 FPH.Plota_FCJ()
 #aaa
@@ -673,8 +674,8 @@ columns_3 = ['Corte', 'Coef_Q', 'Coef_V', 'Coef_S', 'Coef_Independente', 'MAPE',
 df3 = pd.DataFrame(list(zip(Corte, Q, V, S, I, TSF, TSF1)), columns=columns_3)
 print(df3)
 
-#output_folder = "C:/Users/Pichau/Documents/GitHub/fph_lin/FPH_Linear/"
-output_folder = "C:/Users/dlbr/OneDrive/Documentos/GitHub/fph_lin/FPH_Linear/"
+output_folder = "C:/Users/Pichau/Documents/GitHub/fph_lin/FPH_Linear/"
+#output_folder = "C:/Users/dlbr/OneDrive/Documentos/GitHub/fph_lin/FPH_Linear/"
 output_file = f"{output_folder}{uhe['codigo']}-FPH-Relatório-Reg-{Reg}-{uhe['nome']}.xlsx"
 
 with pd.ExcelWriter(output_file) as writer:
@@ -689,6 +690,7 @@ with pd.ExcelWriter(output_file) as writer:
 
 # with pd.ExcelWriter('FPH-Relatório-Reg-'+Reg+'-'+uhe['nome']+'.xlsx') as writer:
 #     df2.to_excel(writer, sheet_name='Dados_Gerais_1')
+
 #     df.to_excel(writer, sheet_name='Dados_Gerais_2')
 #     if Reg == 'None':
 #         df3.to_excel(writer, sheet_name='Cortes_FPH_Linear')
