@@ -1,7 +1,7 @@
 \ Model vert
 \ LP format - for model browsing. Use MPS format to capture full model detail.
 Minimize
-  2349.598021374356 S_coef + 6.317630489317621 Constant + [ 436921 S_coef ^2
+  60394.15895008597 S_coef + 3537.618457422204 Constant + [ 515524 S_coef ^2
    ] / 2 
 Subject To
 Bounds

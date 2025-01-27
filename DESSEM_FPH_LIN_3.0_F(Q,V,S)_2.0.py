@@ -56,8 +56,11 @@ class FPH():
         return cota_jusante
 
     def HL(self, Volume, Defluencia, w):
-        return self.FCM(Volume)-self.FCJ(Defluencia)-uhe['perda_hid']
-   
+        if uhe['tipo_perda'] ==2:
+            return self.FCM(Volume)-self.FCJ(Defluencia)-uhe['perda_hid']
+        else:
+            return (self.FCM(Volume)-self.FCJ(Defluencia))*(1-uhe['perda_hid']/100)
+        
     def RDP(self, fph):
                    
         fph = rdp(fph,epsilon=0.0001) 
@@ -143,7 +146,7 @@ class FPH():
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (2/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (2/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])        
         
            
-        self.vert_var = np.linspace(0, self.q_max+MLT_MAX, disc[2])           
+        self.vert_var = np.linspace(0, MLT_MAX*2, disc[2])           
         if vqmax == True:
             self.vazao_usina = np.linspace(max(self.vazao_usina), max(self.vazao_usina), 1) 
             self.vol_var = np.linspace(max(self.vol_var), max(self.vol_var), 1)
@@ -248,8 +251,13 @@ class FPH_Linear():
             fph = self.fph
             fphl = self.fph
             fph_s = self.fph_s
-            ajuste = 1           
-            prod = uhe['prod_esp']*(FPH.PCV[0]-FPH.PVNJ[0]-uhe['perda_hid'])            
+            ajuste = 1
+            
+            if uhe['tipo_perda'] ==2:
+                prod = uhe['prod_esp']*(FPH.PCV[0]-FPH.PVNJ[0]-uhe['perda_hid'])
+            else:
+                prod = uhe['prod_esp']*(FPH.PCV[0]-FPH.PVNJ[0]-uhe['perda_hid'])*(1-uhe['perda_hid']/100)           
+            #prod = uhe['prod_esp']*(FPH.PCV[0]-FPH.PVNJ[0]-uhe['perda_hid'])            
             self.coef = np.array([[prod,0,0]])
             self.coef_s =np.array([[prod,0,0,0]])
             fph, fphl, acc  = self.fph_out_linear(Estratégia) 
@@ -497,11 +505,11 @@ class FPH_SEL():
 plt.close('all')
 Caso = Newave('NEWAVE') #Lê os dados do Newave
 
-uhe = Caso.hidr.get('foz r. claro')
+uhe = Caso.hidr.get('Furnas')
 #uhe = Caso.hidr.get(261)
 #Volume
-
-Vini = uhe['vol_min'] + (1/2)*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
+Vutil = 0.5
+Vini = uhe['vol_min'] + Vutil*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
 #aaa
 #%%
 #--------------------------------------------------Incializa Modelo e Regressor do Polinômio de Rendimento Hidráulico----------------------------------------------------------------------------------------------------------------# 
@@ -513,7 +521,7 @@ FPHA_Adj = True
 Estratégia = 'Agregada'
 #grp = 2
 
-MLT_MAX = 359
+MLT_MAX = 1702
  
 #Reg = 'V_Faixa'
 Reg  = uhe['tipo_reg']
