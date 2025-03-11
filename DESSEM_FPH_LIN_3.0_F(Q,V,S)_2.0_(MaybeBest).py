@@ -146,7 +146,7 @@ class FPH():
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (2/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (2/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])        
         
            
-        self.vert_var = np.linspace(0, MLT_MAX*2, disc[2])           
+        self.vert_var = np.linspace(0, MLT_MAX, disc[2])           
         if vqmax == True:
             self.vazao_usina = np.linspace(max(self.vazao_usina), max(self.vazao_usina), 1) 
             self.vol_var = np.linspace(max(self.vol_var), max(self.vol_var), 1)
@@ -332,7 +332,7 @@ class FPH_Linear():
             n= Model("vert")
             k = Model("ajuste")
             fobj, Y = [], []
-            y = n.addVar(lb=-1000, ub=0, name="S_coef")
+            y = n.addVar(lb=-1000, ub=1000, name="S_coef")
             coef_a = k.addVar(lb=0, ub=1, name="coef_ajuste")
     
         #----------------------------------------------------------
@@ -505,7 +505,7 @@ class FPH_SEL():
 plt.close('all')
 Caso = Newave('NEWAVE') #Lê os dados do Newave
 
-uhe = Caso.hidr.get('Furnas')
+uhe = Caso.hidr.get('Jirau')
 #uhe = Caso.hidr.get(261)
 #Volume
 Vutil = 0.5
@@ -521,7 +521,8 @@ FPHA_Adj = True
 Estratégia = 'Agregada'
 #grp = 2
 
-MLT_MAX = 1702
+MLT_MAX = 468
+
  
 #Reg = 'V_Faixa'
 Reg  = uhe['tipo_reg']
