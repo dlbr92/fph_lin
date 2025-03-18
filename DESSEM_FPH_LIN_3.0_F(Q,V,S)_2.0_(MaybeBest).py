@@ -510,7 +510,7 @@ uhe = Caso.hidr.get('Jirau')
 #Volume
 Vutil = 0.5
 Vini = uhe['vol_min'] + Vutil*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
-#aaa
+aaa
 #%%
 #--------------------------------------------------Incializa Modelo e Regressor do Polinômio de Rendimento Hidráulico----------------------------------------------------------------------------------------------------------------# 
 
@@ -521,7 +521,7 @@ FPHA_Adj = True
 Estratégia = 'Agregada'
 #grp = 2
 
-MLT_MAX = 468
+MLT_MAX = 253
 
  
 #Reg = 'V_Faixa'
