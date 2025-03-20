@@ -40,6 +40,7 @@ class FPH():
         self.PCA = uhe['pol_cota_area'] #Cota Áreas
         self.PCV = uhe['pol_cota_vol'] #Cota volume
         self.PVNJ = uhe['pol_vaz_niv_jus'] #Cota volumeuhe['pol_vaz_niv_jus']
+        #self.PVNJ =  [71.2633, 0.00000317641, 0.00000000406621, -0.000000000000057741, 2.90458E-19, 1]  
         #self.PVNJ = [98.62000274658203, 0.00001, 0, 0, 0, 0.0] #Verificar peculiaridade de ilha pombos
         #self.PVNJ = [98.62000274658203,  0.0228704996407032, -6.099928941694088e-05, 9.000285672300379e-08, -4.9799688678353604e-11, 0.0]
     
@@ -82,6 +83,7 @@ class FPH():
         self.q_max = 0
         for i in range(uhe['num_conj_maq']):
             self.q_max=self.q_max+uhe['maq_por_conj'][i]*uhe['vaz_efet_conj'][i]
+            #self.q_max=self.q_max+uhe['maq_por_conj'][i]*520
             
         #Discretização
         self.vazao_usina = np.linspace(0, self.q_max, disc[0])
@@ -508,9 +510,10 @@ Caso = Newave('NEWAVE') #Lê os dados do Newave
 uhe = Caso.hidr.get('Jirau')
 #uhe = Caso.hidr.get(261)
 #Volume
-Vutil = 0.5
-Vini = uhe['vol_min'] + Vutil*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
-aaa
+# Vutil = 0.5
+# Vini = uhe['vol_min'] + Vutil*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
+Vini = 2206.86362426589
+#aaa
 #%%
 #--------------------------------------------------Incializa Modelo e Regressor do Polinômio de Rendimento Hidráulico----------------------------------------------------------------------------------------------------------------# 
 
@@ -521,7 +524,7 @@ FPHA_Adj = True
 Estratégia = 'Agregada'
 #grp = 2
 
-MLT_MAX = 253
+MLT_MAX = 70133.18681
 
  
 #Reg = 'V_Faixa'
