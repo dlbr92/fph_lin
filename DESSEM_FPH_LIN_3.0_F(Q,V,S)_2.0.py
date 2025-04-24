@@ -682,8 +682,9 @@ columns_3 = ['Corte', 'Coef_Q', 'Coef_V', 'Coef_S', 'Coef_Independente', 'MAPE',
 df3 = pd.DataFrame(list(zip(Corte, Q, V, S, I, TSF, TSF1)), columns=columns_3)
 print(df3)
 
-output_folder = "C:/Users/Pichau/Documents/GitHub/fph_lin/FPH_Linear/"
-#output_folder = "C:/Users/dlbr/OneDrive/Documentos/GitHub/fph_lin/FPH_Linear/"
+#output_folder = "C:/Users/Pichau/Documents/GitHub/fph_lin/FPH_Linear/"
+
+output_folder = "C:/Users/dlbr/OneDrive/Documentos/GitHub/fph_lin/FPH_Linear/"
 output_file = f"{output_folder}{uhe['codigo']}-FPH-Relatório-Reg-{Reg}-{uhe['nome']}.xlsx"
 
 with pd.ExcelWriter(output_file) as writer:
