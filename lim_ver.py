@@ -16,7 +16,7 @@ def fph(q, v, s, df):
     valores = df['Coef_Q'] * q + df['Coef_V'] * v + df['Coef_S'] * s
     return valores.min()
 
-def encontrar_limite_superior_S(q, v, df, s_min=0, s_max=10000, tol=1e-3, max_iter=100):
+def encontrar_limite_superior_S(q, v, df, s_min=0, s_max=100000, tol=1e-3, max_iter=100):
     """
     Busca o maior valor de S tal que FPH(q, v, S) >= 0.
     Usa busca binária no intervalo [s_min, s_max].
@@ -42,5 +42,5 @@ if __name__ == "__main__":
     q_fixo = 153.0
     v_fixo = 1697.12
 
-    s_maximo = encontrar_limite_superior_S(q_fixo, v_fixo, df_cortes, s_min=0, s_max=50000)
+    s_maximo = encontrar_limite_superior_S(q_fixo, v_fixo, df_cortes, s_min=0, s_max=100000)
     print(f"Maior valor de S com FPH >= 0 (q={q_fixo}, v={v_fixo}): {s_maximo:.3f}")
