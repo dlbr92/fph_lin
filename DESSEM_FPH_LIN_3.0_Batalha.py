@@ -134,8 +134,7 @@ class FPH():
 
         self.vazao_usina = np.linspace(0, self.q_max, disc[0])
         
-        self.vol_var = np.linspace(uhe['vol_min'], uhe['vol_max'], disc[1]) #   
-        #self.vol_var = np.linspace(Vini*(1-0.00001),Vini*(1+0.00001))
+        self.vol_var = np.linspace(uhe['vol_min'], uhe['vol_max'], disc[1]) #         
         
         if Reg == 'M':
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (1/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (1/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])             
@@ -145,7 +144,7 @@ class FPH():
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (2/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (2/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])        
         
            
-        self.vert_var = np.linspace(0, self.q_max+MLT_MAX, disc[2])           
+        self.vert_var = np.linspace(0, 2*MLT_MAX, disc[2])           
         if vqmax == True:
             self.vazao_usina = np.linspace(max(self.vazao_usina), max(self.vazao_usina), 1) 
             self.vol_var = np.linspace(max(self.vol_var), max(self.vol_var), 1)

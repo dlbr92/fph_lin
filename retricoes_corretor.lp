@@ -1,8 +1,9 @@
 \ Model ajuste
 \ LP format - for model browsing. Use MPS format to capture full model detail.
+\ Signature: 0xc60ddf5a1d6698dd
 Minimize
-  - 1.6096975833759564e+08 coef_ajuste + 7.8831993720532775e+07 Constant + [
-   1.643448419630357e+08 coef_ajuste ^2 ] / 2 
+  - 32877.57369473912 coef_ajuste + 15996.12865812176 Constant + [
+   33787.38928509982 coef_ajuste ^2 ] / 2 
 Subject To
 Bounds
  coef_ajuste <= 1
