@@ -11,21 +11,25 @@ import matplotlib.pyplot as plt
 from PySDDP.Pen import Newave
 
 # Carrega a planilha
-df = pd.read_excel('batalh_fph.xlsx', sheet_name='Cortes_FPH_Linear_V_Faixa')
+df = pd.read_excel('batalh_ita.xlsx', sheet_name='Cortes_FPH_Linear_V_Faixa')
 Caso = Newave('NEWAVE') #Lê os dados do Newave
-uhe = Caso.hidr.get('Batalha')          #5  2.14862*10E-5
+uhe = Caso.hidr.get('Itauba')          #5  2.14862*10E-5
 
 # Parâmetro fixo
-V_fixed = uhe['vol_max'] # hm³
-Q_list = [ 153]  # diferentes valores de vazão
+V_fixed = (uhe['vol_min']+(uhe['vol_max']-uhe['vol_min'])*0.6568) # hm³
+q_max=0
+for i in range(uhe['num_conj_maq']):
+            q_max += uhe['maq_por_conj'][i] * uhe['vaz_efet_conj'][i]
+Q_list = [q_max]  # diferentes valores de vazão
 
 # Eixo S (nível montante)
-S_vals = np.linspace(0, 1500, 500)
+S_vals = np.linspace(0, 3473.935, 500)
 
 plt.figure(figsize=(10, 6))
 
 PCV =uhe['pol_cota_vol']
 PVNJ =uhe['pol_vaz_niv_jus']
+PVNJ = [9.73E+01,	-1.72E-03,	1.48E-06,	-4.43E-10,	4.64E-14] #jusante dmax furnas
 def FCM( Volume):
         cota_montante = 0
         for i in range(len(PCV)):
@@ -45,7 +49,7 @@ for Q_fixed in Q_list:
     FPH_vals = np.full(S_vals.shape, np.inf)
     FPH_vals_2 = list()
     for s in S_vals:
-        qued = HL(V_fixed, s, Q_fixed)
+        qued = HL(V_fixed, s+Q_fixed, 0)
         fph_2 = uhe['prod_esp']*Q_fixed*qued
         FPH_vals_2.append(fph_2)
    
