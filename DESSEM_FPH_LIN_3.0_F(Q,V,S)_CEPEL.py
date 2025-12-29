@@ -39,6 +39,9 @@ class FPH():
         'Coeficientes do Polinômio'
         self.PCA = uhe['pol_cota_area'] #Cota Áreas
         self.PCV = uhe['pol_cota_vol'] #Cota volume
+       # self.PCV = [3.3165E+02,	7.5202E-03,	0.0000E+00,	0.0000E+00,	0.0000E+00] #ITA
+        #self.PCV = [359.0172,	0.08574268,	-0.000109172,	8.48813E-08,	-2.56847E-11] #Salto Osorio
+#        self.PCV = [-1619.416, 2.213103, -0.000951133, 1.82279E-07, -1.30999E-11] #Salto Caxias		
         self.PVNJ = uhe['pol_vaz_niv_jus'] #Cota volumeuhe['pol_vaz_niv_jus']
         #self.PVNJ = [98.62000274658203, 0.00001, 0, 0, 0, 0.0] #Verificar peculiaridade de ilha pombos
         #self.PVNJ = [98.62000274658203,  0.0228704996407032, -6.099928941694088e-05, 9.000285672300379e-08, -4.9799688678353604e-11, 0.0]
@@ -98,6 +101,9 @@ class FPH():
         if Reg=='S':
             self.vol_var = np.linspace(max(uhe['vol_min'], Vini - (2/10)*(uhe['vol_max']-uhe['vol_min'])), min(uhe['vol_max'], Vini + (2/10)*(uhe['vol_max']-uhe['vol_min'])), disc[1])        
         
+        #self.vol_var = np.linspace(722, 1124, disc[1]) #Salto Osorio
+       # self.vol_var = np.linspace(4300, 5100, disc[1]) #ITA
+        #self.vol_var = np.linspace(3300, 3572.76, disc[1]) #Salto Caxias
                 
             
         #FPH Não Linear     
@@ -505,8 +511,19 @@ class FPH_SEL():
 plt.close('all')
 Caso = Newave('NEWAVE') #Lê os dados do Newave
 
-uhe = Caso.hidr.get('Furnas')
-#uhe = Caso.hidr.get(261)
+
+#uhe = Caso.hidr.get('Barra Grande')
+#uhe = Caso.hidr.get('Campos Novos')
+#uhe = Caso.hidr.get('Machadinho')
+#uhe = Caso.hidr.get('ITA')
+#uhe = Caso.hidr.get('Foz Chapeco')
+#uhe = Caso.hidr.get('G.B. MUNHOZ')
+#uhe = Caso.hidr.get('Segredo')
+#uhe = Caso.hidr.get('SLT.SANTIAGO')
+#uhe = Caso.hidr.get('SALTO OSORIO')
+#uhe = Caso.hidr.get('Salto Caxias')
+uhe = Caso.hidr.get('Baixo Iguacu')
+
 #Volume
 Vutil = 0.5
 Vini = uhe['vol_min'] + Vutil*(uhe['vol_max']-uhe['vol_min']) #Cenário 1
@@ -521,11 +538,22 @@ FPHA_Adj = True
 Estratégia = 'Agregada'
 #grp = 2
 
-MLT_MAX = 1702
+#MLT_MAX = 427.021978 #Barra Grande
+#MLT_MAX = 476.3296703 #Campos Novos
+#MLT_MAX = 1097 #Machadinho
+#MLT_MAX = 1557.934066 #Itá
+#MLT_MAX = 1903.637363 #Foz Chapeco 
+#MLT_MAX = 920.0659341 #Foz do Areia (G.B. MUNHOZ)
+#MLT_MAX = 1068.032967 #Segredo
+#MLT_MAX = 1421.56044 #SLT Santiago
+#MLT_MAX = 1494.802198 #SALTO OSORIO
+#MLT_MAX = 1929.813187 #Salto Caxias
+MLT_MAX = 2086 #Baixo Iguaçu
  
-#Reg = 'V_Faixa'
-Reg  = uhe['tipo_reg']
-Reg = None
+Reg = 'V_Faixa'
+#Reg  = uhe['tipo_reg']
+#Reg  = 'D'
+#Reg = None
 
 #Extração de pontos FPH
 fph = FPH.fph_out([5,5], Estratégia = 'Agregada', rdp=False)
@@ -680,13 +708,13 @@ df4 = pd.DataFrame([uhe]) #CHECK THIS LATER
 df4 = df4.T
 
 # Use square brackets to create a list with a single value for 'R²'
-columns_3 = ['Corte', 'Coef_Q', 'Coef_V', 'Coef_S', 'Coef_Independente', 'MAPE', 'MAPE_S']
+columns_3 = ['Corte', 'Coef_Q', 'Coef_V', 'Coef_S', 'Coef_Independente', 'MAPE (%)', 'MAPE_S (%)']
 df3 = pd.DataFrame(list(zip(Corte, Q, V, S, I, TSF, TSF1)), columns=columns_3)
 print(df3)
 
 #output_folder = "C:/Users/Pichau/Documents/GitHub/fph_lin/FPH_Linear/"
 
-output_folder = "C:/Users/dlbr/OneDrive/Documentos/GitHub/fph_lin/FPH_Linear/"
+output_folder = "F:/GitHub/fph_lin/FPH_Linear"
 output_file = f"{output_folder}{uhe['codigo']}-FPH-Relatório-Reg-{Reg}-{uhe['nome']}.xlsx"
 
 with pd.ExcelWriter(output_file) as writer:
